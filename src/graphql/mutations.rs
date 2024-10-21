@@ -116,6 +116,52 @@ impl MutationRoot {
 
         let current_time = Local::now().with_timezone(&Kolkata).time();
 
+        let prev_date = date - chrono::Duration::days(1);
+    
+        let prev_attendance: Option<Attendance> = sqlx::query_as::<_, Attendance>(
+            "SELECT * FROM Attendance WHERE id = $1 AND date = $2"
+        )
+        .bind(id)
+        .bind(prev_date)
+        .fetch_optional(pool.as_ref())
+        .await?;
+    
+        // Get member details to update streaks
+        let mut member: Member = sqlx::query_as::<_, Member>(
+            "SELECT * FROM Member WHERE id = $1"
+        )
+        .bind(id)
+        .fetch_one(pool.as_ref())
+        .await?;
+    
+        if is_present {
+            if let Some(prev_attendance) = prev_attendance {
+                // continue streak if present yesterday
+                if prev_attendance.is_present {
+                    member.streak += 1;
+                } else {
+                    member.streak = 1;
+                }
+            } else {
+                member.streak = 1; // new streak if no previous update
+            }
+    
+            if member.streak > member.max_streak {
+                member.max_streak = member.streak;
+            }
+        } else {
+            member.streak = 0;
+        }
+    
+        sqlx::query(
+            "UPDATE Member SET streak = $1, max_streak = $2 WHERE id = $3"
+        )
+        .bind(member.streak)
+        .bind(member.max_streak)
+        .bind(id)
+        .execute(pool.as_ref())
+        .await?;
+
         let attendance = sqlx::query_as::<_, Attendance>(
             "
             UPDATE Attendance

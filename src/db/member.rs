@@ -14,4 +14,6 @@ pub struct Member {
     pub sex: String,
     pub year: i32,
     pub macaddress: String,
+    pub streak: i32,
+    pub max_streak: i32,
 }
