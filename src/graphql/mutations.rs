@@ -1,13 +1,11 @@
 use async_graphql::{Context, Object};
 use ::chrono::Local;
-use chrono::{NaiveDate, NaiveTime};
+use chrono::{NaiveDate, NaiveTime, Duration};
 use chrono_tz::Asia::Kolkata;
 use sqlx::PgPool;
-use sqlx::types::chrono;
 use std::sync::Arc;
 use hmac::{Hmac,Mac};
 use sha2::Sha256;
-
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -116,7 +114,7 @@ impl MutationRoot {
 
         let current_time = Local::now().with_timezone(&Kolkata).time();
 
-        let prev_date = date - chrono::Duration::days(1);
+        let prev_date = date - Duration::days(1);
     
         let prev_attendance: Option<Attendance> = sqlx::query_as::<_, Attendance>(
             "SELECT * FROM Attendance WHERE id = $1 AND date = $2"
